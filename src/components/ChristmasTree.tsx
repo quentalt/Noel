@@ -1,10 +1,10 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Cone, Cylinder } from '@react-three/drei';
 import * as THREE from 'three';
 import { ChristmasOrnament } from './ChristmasOrnament';
-import { Garland } from './Garland';
 import { Star } from './Star';
+import { Garland } from './Garland.tsx';
 
 interface ChristmasTreeProps {
     position: [number, number, number];
@@ -25,6 +25,21 @@ const GARLAND_COLOR = '#FFD700'; // Or
 
 export function ChristmasTree({ position }: ChristmasTreeProps) {
     const treeRef = useRef<THREE.Group>(null);
+    const [visibilities, setVisibilities] = useState<boolean[]>(new Array(30).fill(true));
+
+    useEffect(() => {
+        const intervals = visibilities.map((_, i) => {
+            return setInterval(() => {
+                setVisibilities((prev) => {
+                    const newVisibilities = [...prev];
+                    newVisibilities[i] = !newVisibilities[i];
+                    return newVisibilities;
+                });
+            }, Math.random() * 2000 + 1000); // Intervalle aléatoire entre 1000ms et 3000ms
+        });
+
+        return () => intervals.forEach(clearInterval);
+    }, []);
 
     useFrame((state) => {
         if (treeRef.current) {
@@ -63,7 +78,7 @@ export function ChristmasTree({ position }: ChristmasTreeProps) {
             </Cone>
 
             {/* Boules de Noël */}
-            {[...Array(30)].map((_, i) => {
+            {new Array(30).fill(null).map((_, i) => {
                 const layer = Math.floor(i / 10); // Répartition en couches
                 const angleOffset = layer * (Math.PI / 5); // Décalage pour chaque couche
                 const angle = (i % 10) * (Math.PI * 2 / 10) + angleOffset;
@@ -78,12 +93,14 @@ export function ChristmasTree({ position }: ChristmasTreeProps) {
                 if (layer === 2 && i % 2 !== 0) return null;
 
                 return (
-                    <ChristmasOrnament
-                        key={i}
-                        position={[x, height, z]}
-                        color={color}
-                        size={size}
-                    />
+                    visibilities[i] && (
+                        <ChristmasOrnament
+                            key={i}
+                            position={[x, height, z]}
+                            color={color}
+                            size={size}
+                        />
+                    )
                 );
             })}
 
